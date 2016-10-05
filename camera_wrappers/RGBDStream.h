@@ -15,6 +15,12 @@
 
 namespace libcgt { namespace camera_wrappers {
 
+struct StreamMetadataV1
+{
+	PixelFormat format;
+	Vector2i size; // width, height
+};
+
 struct StreamMetadata
 {
     StreamType type;
@@ -26,7 +32,7 @@ class RGBDInputStream
 {
 public:
 
-    RGBDInputStream( const char* filename );
+    RGBDInputStream( const char* filename, bool useV1 );
 
     RGBDInputStream( const RGBDInputStream& copy ) = delete;
     RGBDInputStream& operator = ( const RGBDInputStream& copy ) = delete;

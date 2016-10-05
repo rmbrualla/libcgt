@@ -6,9 +6,11 @@ namespace libcgt { namespace camera_wrappers {
 
 const int FORMAT_VERSION = 1;
 
-RGBDInputStream::RGBDInputStream( const char* filename ) :
+RGBDInputStream::RGBDInputStream( const char* filename, bool useV1 ) :
     m_stream( filename )
 {
+	std::vector< StreamMetadataV1 > metadataV1;
+
     bool ok;
 
     // Read header.
@@ -26,23 +28,69 @@ RGBDInputStream::RGBDInputStream( const char* filename ) :
         ok = m_stream.read( nStreams );
         if( ok && nStreams > 0 )
         {
+            metadataV1.resize( nStreams );
             m_metadata.resize( nStreams );
             for( int i = 0; i < nStreams; ++i )
             {
-                ok = m_stream.read( m_metadata[ i ] );
+                if( useV1 )
+                {
+                    ok = m_stream.read( metadataV1[ i ] );
+                }
+                else
+                {
+                    ok = m_stream.read( m_metadata[ i ] );
+                }
                 if( ok )
                 {
-                    int bufferSize =
-                        pixelSizeBytes( m_metadata[ i ].format ) *
-                        m_metadata[ i ].size.x * m_metadata[ i ].size.y;
+                    int bufferSize;
+
+                    if( useV1 )
+                    {
+                        bufferSize =
+                            pixelSizeBytes( metadataV1[ i ].format ) *
+                            metadataV1[ i ].size.x * metadataV1[ i ].size.y;
+                    }
+                    else
+                    {
+                        bufferSize =
+                            pixelSizeBytes( m_metadata[ i ].format ) *
+                            m_metadata[ i ].size.x * m_metadata[ i ].size.y;
+                    }
                     m_buffers.emplace_back( bufferSize );
                 }
 
                 if( !ok )
                 {
                     m_metadata.clear();
+                    metadataV1.clear();
                     break;
                 }
+            }
+        }
+    }
+
+    if( useV1 )
+    {
+        for( int i = 0; i < metadataV1.size(); ++i )
+        {
+            m_metadata[ i ].format = metadataV1[ i ].format;
+            m_metadata[ i ].size = metadataV1[ i ].size;
+
+            PixelFormat fmt = metadataV1[ i ].format;
+            if( fmt == PixelFormat::DEPTH_MM_U16 || fmt == PixelFormat::DEPTH_M_F32 )
+            {
+                m_metadata[ i ].type = StreamType::DEPTH;
+            }
+            else if( fmt == PixelFormat::RGBA_U8888 ||
+                fmt == PixelFormat::RGB_U888 ||
+                fmt == PixelFormat::BGRA_U8888 ||
+                fmt == PixelFormat::BGR_U888 )
+            {
+                m_metadata[ i ].type = StreamType::COLOR;
+            }
+            else
+            {
+                m_metadata[ i ].type = StreamType::INFRARED;
             }
         }
     }
