@@ -73,7 +73,6 @@ inline float& Vector3f::operator [] ( int i )
     return ( &x )[i];
 }
 
-
 inline Vector2f Vector3f::xz() const
 {
     return{ x, z };

@@ -51,9 +51,10 @@ public:
     // TODO: make this part of DeviceArray2DView once KernelArray2D is renamed.
     cudaResourceDesc resourceDesc() const;
 
-    // resizes the vector
-    // original data is not preserved
-    void resize( const Vector2i& size );
+    // Resizes this array. The existing data is not preserved.
+    // Does nothing if size is unchanged.
+    // TODO: return bool
+    bool resize( const Vector2i& size );
 
     // sets the vector to 0 (all bytes to 0)
     void clear();
@@ -75,7 +76,7 @@ public:
 
     // copy from another DeviceArray2D to this
     // this is automatically resized
-    void copyFromDevice( const DeviceArray2D< T >& src );
+    bool copyFromDevice( const DeviceArray2D< T >& src );
 
     // Copy from host array src to this.
     // This is automatically resized.
@@ -88,10 +89,10 @@ public:
     bool copyToHost( Array2DView< T > dst ) const;
 
     // copy from cudaArray src to this
-    void copyFromArray( cudaArray* src );
+    bool copyFromArray( cudaArray_t src );
 
     // copy from this to cudaArray dst
-    void copyToArray( cudaArray* dst ) const;
+    bool copyToArray( cudaArray_t dst ) const;
 
     const T* pointer() const;
     T* pointer();
@@ -105,8 +106,6 @@ public:
     KernelArray2D< const T > readView();
     KernelArray2D< T > writeView();
 
-    void load( const char* filename );
-
 private:
 
     Vector2i m_size = Vector2i{ 0 };
@@ -115,8 +114,8 @@ private:
 
     uint8_t* m_devicePointer = nullptr;
 
-    // frees the memory if this is not null
-    void destroy();
+    // Frees the memory if this is not null.
+    bool destroy();
 
     // Size of one row in bytes (not counting alignment)
     // Used for cudaMemset, which requires both a pitch and the original width

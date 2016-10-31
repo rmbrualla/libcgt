@@ -1,7 +1,6 @@
 template< typename T >
 DeviceOpaqueArray2D< T >::DeviceOpaqueArray2D( const Vector2i& size ) :
     m_size( size ),
-    m_sizeInBytes( size.x * size.y * sizeof( T ) ),
     m_cfd( cudaCreateChannelDesc< T >() )
 {
     assert( size.x > 0 );
@@ -18,15 +17,27 @@ DeviceOpaqueArray2D< T >::DeviceOpaqueArray2D( const Vector2i& size ) :
     {
         m_size = Vector2i{ 0 };
         m_cfd = { 0 };
-        m_sizeInBytes = 0;
         m_deviceArray = nullptr;
     }
 }
 
 template< typename T >
+DeviceOpaqueArray2D< T >::DeviceOpaqueArray2D( cudaArray_t array )
+{
+    cudaExtent extent;
+    cudaError_t err = cudaArrayGetInfo( &m_cfd, &extent, nullptr /* flags */,
+        array );
+    m_size.x = static_cast< int >( extent.width );
+    m_size.y = static_cast< int >( extent.height );
+    m_resourceDesc.resType = cudaResourceTypeArray;
+    m_resourceDesc.res.array.array = m_deviceArray;
+    m_ownsArray = false;
+}
+
+template< typename T >
 DeviceOpaqueArray2D< T >::~DeviceOpaqueArray2D()
 {
-    if( m_deviceArray != nullptr )
+    if( m_ownsArray && m_deviceArray != nullptr )
     {
         cudaFreeArray( m_deviceArray );
         m_deviceArray = nullptr;
@@ -34,7 +45,6 @@ DeviceOpaqueArray2D< T >::~DeviceOpaqueArray2D()
     m_size = Vector2i{ 0 };
     m_resourceDesc = {};
     m_cfd = {};
-    m_sizeInBytes = 0;
 }
 
 template< typename T >
@@ -159,13 +169,13 @@ bool DeviceOpaqueArray2D< T >::copyToHost( Array2DView< T > dst,
 }
 
 template< typename T >
-const cudaArray* DeviceOpaqueArray2D< T >::deviceArray() const
+const cudaArray_t DeviceOpaqueArray2D< T >::deviceArray() const
 {
     return m_deviceArray;
 }
 
 template< typename T >
-cudaArray* DeviceOpaqueArray2D< T >::deviceArray()
+cudaArray_t DeviceOpaqueArray2D< T >::deviceArray()
 {
     return m_deviceArray;
 }

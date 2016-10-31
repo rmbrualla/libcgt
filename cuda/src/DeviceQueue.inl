@@ -210,17 +210,12 @@ bool DeviceQueue< T >::dequeueToHost( T& val )
     return false;
 }
 
-#include <common/ArrayUtils.h>
-
-using libcgt::core::arrayutils::readViewOf;
-using libcgt::core::arrayutils::writeViewOf;
-
 template< typename T >
 void DeviceQueue< T >::copyFromHost( const std::vector< T >& src )
 {
     uint length = static_cast< uint >( src.size() );
     resize( length ); // resize clears the queue
-    md_ringBuffer.copyFromHost( readViewOf( src ) );
+    md_ringBuffer.copyFromHost( libcgt::core::arrayutils::readViewOf( src ) );
     md_headTailAbsoluteIndices.set( make_uint2( 0, length ) );
 }
 

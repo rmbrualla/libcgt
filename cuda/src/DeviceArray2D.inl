@@ -132,33 +132,38 @@ cudaResourceDesc DeviceArray2D< T >::resourceDesc() const
 }
 
 template< typename T >
-void DeviceArray2D< T >::resize( const Vector2i& size )
+bool DeviceArray2D< T >::resize( const Vector2i& size )
 {
     if( size == m_size )
     {
-        return;
+        return true;
+    }
+    if( size.x <= 0 || size.y <= 0 )
+    {
+        return false;
     }
 
     destroy();
 
-    if( size.x > 0 && size.y > 0 )
+    size_t pitch;
+    cudaError_t err = cudaMallocPitch
+    (
+        reinterpret_cast< void** >( &m_devicePointer ),
+        &pitch,
+        m_size.x * sizeof( T ),
+        m_size.y
+    );
+    if( err == cudaSuccess )
     {
         m_size = size;
-        size_t pitch;
-
-        checkCudaErrors
-        (
-            cudaMallocPitch
-            (
-                reinterpret_cast< void** >( &m_devicePointer ),
-                &pitch,
-                m_size.x * sizeof( T ),
-                m_size.y
-            )
-        );
-
         m_stride = { sizeof( T ), static_cast< int >( pitch ) };
+        return true;
     }
+    else
+    {
+        return false;
+    }
+
 }
 
 template< typename T >
@@ -207,24 +212,26 @@ void DeviceArray2D< T >::set( const Vector2i& xy, const T& value )
 }
 
 template< typename T >
-void DeviceArray2D< T >::copyFromDevice( const DeviceArray2D< T >& src )
+bool DeviceArray2D< T >::copyFromDevice( const DeviceArray2D< T >& src )
 {
     if( isNull() || src.isNull() )
     {
-        return;
+        return false;
     }
 
-    resize( src.size() );
-    checkCudaErrors
-    (
-        cudaMemcpy2D
+    bool succeeded = resize( src.size() );
+    if( succeeded )
+    {
+        cudaError_t err = cudaMemcpy2D
         (
             m_devicePointer,
             rowStrideBytes(), src.m_devicePointer, src.m_stride.y,
             src.widthInBytes(), src.height(),
             cudaMemcpyDeviceToDevice
-        )
-    );
+        );
+        succeeded = ( err == cudaSuccess );
+    }
+    return succeeded;
 }
 
 template< typename T >
@@ -239,19 +246,19 @@ bool DeviceArray2D< T >::copyFromHost( Array2DView< const T > src )
         return false;
     }
 
-    resize( src.size() );
-    checkCudaErrors
-    (
-        cudaMemcpy2D
+    bool succeeded = resize( src.size() );
+    if( succeeded )
+    {
+        cudaError_t err = cudaMemcpy2D
         (
             pointer(), rowStrideBytes(),
             src.pointer(), src.rowStrideBytes(),
             src.width() * sizeof( T ), src.height(),
             cudaMemcpyHostToDevice
-        )
-    );
-
-    return true;
+        );
+        succeeded = ( err == cudaSuccess );
+    }
+    return succeeded;
 }
 
 template< typename T >
@@ -262,50 +269,47 @@ bool DeviceArray2D< T >::copyToHost( Array2DView< T > dst ) const
         return false;
     }
 
-    checkCudaErrors
+    cudaError_t err = cudaMemcpy2D
     (
-        cudaMemcpy2D
-        (
-            dst.pointer(), dst.width() * sizeof( T ),
-            pointer(), m_stride.y,
-            widthInBytes(), height(),
-            cudaMemcpyDeviceToHost
-        )
+        dst.pointer(), dst.width() * sizeof( T ),
+        pointer(), m_stride.y,
+        widthInBytes(), height(),
+        cudaMemcpyDeviceToHost
     );
 
-    return true;
+    return( err == cudaSuccess );
 }
 
 template< typename T >
-void DeviceArray2D< T >::copyFromArray( cudaArray* src )
+bool DeviceArray2D< T >::copyFromArray( cudaArray_t src )
 {
-    checkCudaErrors
+    // TODO: DeviceOpaqueArrayView( src ). It has sizes and offsets into the
+    // cudaArray_t.
+    cudaError_t err = cudaMemcpy2DFromArray
     (
-        cudaMemcpy2DFromArray
-        (
-            pointer(), rowStrideBytes(),
-            src,
-            0, 0,
-            widthInBytes(), height(),
-            cudaMemcpyDeviceToDevice
-        )
+        pointer(), rowStrideBytes(),
+        src,
+        0, 0,
+        widthInBytes(), height(),
+        cudaMemcpyDeviceToDevice
     );
+
+    return( err == cudaSuccess );
 }
 
 template< typename T >
-void DeviceArray2D< T >::copyToArray( cudaArray* dst ) const
+bool DeviceArray2D< T >::copyToArray( cudaArray_t dst ) const
 {
-    checkCudaErrors
+    cudaError_t err = cudaMemcpy2DToArray
     (
-        cudaMemcpy2DToArray
-        (
-            dst,
-            0, 0,
-            pointer(), rowStrideBytes(),
-            widthInBytes(), height(),
-            cudaMemcpyDeviceToDevice
-        )
+        dst,
+        0, 0,
+        pointer(), rowStrideBytes(),
+        widthInBytes(), height(),
+        cudaMemcpyDeviceToDevice
     );
+
+    return( err == cudaSuccess );
 }
 
 template< typename T >
@@ -360,27 +364,23 @@ KernelArray2D< T > DeviceArray2D< T >::writeView()
 }
 
 template< typename T >
-void DeviceArray2D< T >::load( const char* filename )
+bool DeviceArray2D< T >::destroy()
 {
-    Array2D< T > h_arr( filename );
-    if( !( h_arr.isNull() ) )
-    {
-        resize( h_arr.size() );
-        copyFromHost( h_arr );
-    }
-}
-
-template< typename T >
-void DeviceArray2D< T >::destroy()
-{
+    bool succeeded;
     if( notNull() )
     {
-        checkCudaErrors( cudaFree( m_devicePointer ) );
+        // TODO: succeeded() function.
+        succeeded = CUDA_SUCCEEDED( cudaFree( m_devicePointer ) );
         m_devicePointer = nullptr;
+    }
+    else
+    {
+        succeeded = true;
     }
 
     m_size = Vector2i{ 0 };
     m_stride = Vector2i{ 0 };
+    return succeeded;
 }
 
 template< typename T >

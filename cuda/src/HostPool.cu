@@ -5,6 +5,8 @@
 
 #include <common/ArrayUtils.h>
 
+using libcgt::core::arrayutils::writeViewOf;
+
 HostPool::HostPool() :
 
     m_capacity( -1 ),
@@ -27,7 +29,7 @@ HostPool::~HostPool()
 
 bool HostPool::isNull() const
 {
-    return( m_freeList.size() > 0 && m_backingStore.size() > 0 );
+    return( m_freeList.size() == 0 && m_backingStore.size() == 0 );
 }
 
 bool HostPool::notNull() const

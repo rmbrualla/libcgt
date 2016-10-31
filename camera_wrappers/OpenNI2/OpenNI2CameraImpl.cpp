@@ -273,7 +273,7 @@ bool OpenNI2CameraImpl::setAutoWhiteBalanceEnabled( bool enabled )
     return false;
 }
 
-bool OpenNI2CameraImpl::copyColor( OpenNI2Camera::Frame& frame )
+bool OpenNI2CameraImpl::copyColor( OpenNI2Camera::FrameView& frame )
 {
     frame.colorUpdated = false;
 
@@ -293,7 +293,7 @@ bool OpenNI2CameraImpl::copyColor( OpenNI2Camera::Frame& frame )
     return false;
 }
 
-bool OpenNI2CameraImpl::copyDepth( OpenNI2Camera::Frame& frame )
+bool OpenNI2CameraImpl::copyDepth( OpenNI2Camera::FrameView& frame )
 {
     frame.depthUpdated = false;
 
@@ -313,7 +313,7 @@ bool OpenNI2CameraImpl::copyDepth( OpenNI2Camera::Frame& frame )
     return false;
 }
 
-bool OpenNI2CameraImpl::copyInfrared( OpenNI2Camera::Frame& frame )
+bool OpenNI2CameraImpl::copyInfrared( OpenNI2Camera::FrameView& frame )
 {
     frame.infraredUpdated = false;
 
@@ -333,7 +333,7 @@ bool OpenNI2CameraImpl::copyInfrared( OpenNI2Camera::Frame& frame )
     return false;
 }
 
-bool OpenNI2CameraImpl::pollColor( OpenNI2Camera::Frame& frame, int timeoutMS )
+bool OpenNI2CameraImpl::pollColor( OpenNI2Camera::FrameView& frame, int timeoutMS )
 {
     if( !m_colorStream.isValid() )
     {
@@ -351,7 +351,7 @@ bool OpenNI2CameraImpl::pollColor( OpenNI2Camera::Frame& frame, int timeoutMS )
     return false;
 }
 
-bool OpenNI2CameraImpl::pollDepth( OpenNI2Camera::Frame& frame, int timeoutMS )
+bool OpenNI2CameraImpl::pollDepth( OpenNI2Camera::FrameView& frame, int timeoutMS )
 {
     if( !m_depthStream.isValid() )
     {
@@ -366,10 +366,14 @@ bool OpenNI2CameraImpl::pollDepth( OpenNI2Camera::Frame& frame, int timeoutMS )
     {
         return copyDepth( frame );
     }
+    else
+    {
+        printf( "Wait failed! (timeout is %d ms)\n%s\n", timeoutMS, OpenNI::getExtendedError() );
+    }
     return false;
 }
 
-bool OpenNI2CameraImpl::pollInfrared( OpenNI2Camera::Frame& frame, int timeoutMS )
+bool OpenNI2CameraImpl::pollInfrared( OpenNI2Camera::FrameView& frame, int timeoutMS )
 {
     if( !m_infraredStream.isValid() )
     {
@@ -387,33 +391,27 @@ bool OpenNI2CameraImpl::pollInfrared( OpenNI2Camera::Frame& frame, int timeoutMS
     return false;
 }
 
-bool OpenNI2CameraImpl::pollOne( OpenNI2Camera::Frame& frame, int timeoutMS )
+bool OpenNI2CameraImpl::pollOne( OpenNI2Camera::FrameView& frame, int timeoutMS )
 {
     frame.colorUpdated = false;
     frame.depthUpdated = false;
     frame.infraredUpdated = false;
 
-    VideoStream* streams[] =
-    {
-        &m_colorStream,
-        &m_depthStream,
-        &m_infraredStream
-    };
-
     int readyIndex = -1; // Initialized to fail.
     Status rc =
-        OpenNI::waitForAnyStream( streams, 3, &readyIndex, timeoutMS );
+        OpenNI::waitForAnyStream( m_streams.data(), m_streams.size(),
+            &readyIndex, timeoutMS );
     if( rc == STATUS_OK )
     {
-        if( readyIndex == 0 ) // color
+        if( readyIndex == m_colorStreamIndex )
         {
             return copyColor( frame );
         }
-        else if( readyIndex == 1 ) // depth
+        else if( readyIndex == m_depthStreamIndex )
         {
             return copyDepth( frame );
         }
-        else if( readyIndex == 2 ) // infrared
+        else if( readyIndex == m_infraredStreamIndex )
         {
             return copyInfrared( frame );
         }
@@ -421,7 +419,7 @@ bool OpenNI2CameraImpl::pollOne( OpenNI2Camera::Frame& frame, int timeoutMS )
     return false;
 }
 
-bool OpenNI2CameraImpl::pollAll( OpenNI2Camera::Frame& frame, int timeoutMS )
+bool OpenNI2CameraImpl::pollAll( OpenNI2Camera::FrameView& frame, int timeoutMS )
 {
     frame.colorUpdated = false;
     frame.depthUpdated = false;
@@ -512,6 +510,8 @@ bool OpenNI2CameraImpl::initializeStreams()
         m_colorStream.create( m_device, SENSOR_COLOR );
         m_colorStream.setVideoMode( colorModes[ colorModeIndex ] );
         m_colorStream.setMirroringEnabled( m_colorConfig.mirror );
+        m_colorStreamIndex = static_cast< int >( m_streams.size() );
+        m_streams.push_back( &m_colorStream );
     }
 
     if( depthModeIndex != -1 )
@@ -519,6 +519,8 @@ bool OpenNI2CameraImpl::initializeStreams()
         m_depthStream.create( m_device, SENSOR_DEPTH );
         m_depthStream.setVideoMode( depthModes[ depthModeIndex ] );
         m_depthStream.setMirroringEnabled( m_depthConfig.mirror );
+        m_depthStreamIndex = static_cast< int >( m_streams.size() );
+        m_streams.push_back( &m_depthStream );
     }
 
     if( infraredModeIndex != -1 )
@@ -526,6 +528,8 @@ bool OpenNI2CameraImpl::initializeStreams()
         m_infraredStream.create( m_device, SENSOR_IR );
         m_infraredStream.setVideoMode( infraredModes[ infraredModeIndex ] );
         m_infraredStream.setMirroringEnabled( m_infraredConfig.mirror );
+        m_infraredStreamIndex = static_cast< int >( m_streams.size() );
+        m_streams.push_back( &m_infraredStream );
     }
 
     return( colorModeIndex != -1 ||

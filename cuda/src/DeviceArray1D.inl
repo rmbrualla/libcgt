@@ -161,17 +161,16 @@ void DeviceArray1D< T >::set( int x, const T& value )
 }
 
 template< typename T >
-void DeviceArray1D< T >::copyFromDevice( const DeviceArray1D< T >& src )
+bool DeviceArray1D< T >::copyFromDevice( const DeviceArray1D< T >& src )
 {
-    resize( src.length() );
-    checkCudaErrors
-    (
-        cudaMemcpy
-        (
-            m_devicePointer, src.m_devicePointer,
-            src.sizeInBytes(), cudaMemcpyDeviceToDevice
-        )
-    );
+    bool succeeded = resize( src.length() );
+    if( succeeded )
+    {
+        cudaError_t err = cudaMemcpy( m_devicePointer, src.m_devicePointer,
+            src.sizeInBytes(), cudaMemcpyDeviceToDevice );
+        succeeded = ( err == cudaSuccess );
+    }
+    return succeeded;
 }
 
 template< typename T >

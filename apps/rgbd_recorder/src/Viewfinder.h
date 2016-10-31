@@ -76,7 +76,7 @@ private:
     const QPen m_yellowPen = QPen{ Qt::yellow };
     const QBrush m_whiteBrush = QBrush{ Qt::white };
 
-    void writeFrame( OpenNI2Camera::Frame frame );
+    void writeFrame( OpenNI2Camera::FrameView frame );
 
     libcgt::camera_wrappers::RGBDOutputStream m_outputStream;
 

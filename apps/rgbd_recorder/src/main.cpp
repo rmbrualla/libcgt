@@ -66,8 +66,9 @@ static bool validateMode( const char* flagname, const std::string& mode )
 }
 
 DEFINE_string( mode, "color+depth",
-    "Stream mode, must be one of: [color, depth, infrared, color+depth,"
-    " depth+infrared]. Default: color+depth."
+    "Stream mode, must be one of:"
+    " {color, depth, infrared, color+depth, depth+infrared}."
+    " Default: color+depth."
     " Note: color+infrared is not allowed." );
 static const bool mode_dummy = gflags::RegisterFlagValidator(
     &FLAGS_mode, &validateMode );

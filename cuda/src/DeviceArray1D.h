@@ -61,7 +61,7 @@ public:
 
     // copy from another DeviceArray1D to this
     // this is automatically resized
-    void copyFromDevice( const DeviceArray1D< T >& src );
+    bool copyFromDevice( const DeviceArray1D< T >& src );
 
     // copy src.length() elements from host --> device vector
     // starting at dstOffset

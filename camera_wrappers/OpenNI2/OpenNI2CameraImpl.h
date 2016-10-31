@@ -40,23 +40,23 @@ public:
     bool getAutoWhiteBalanceEnabled();
     bool setAutoWhiteBalanceEnabled( bool enabled );
 
-    bool pollColor( OpenNI2Camera::Frame& frame, int timeoutMS = 0 );
+    bool pollColor( OpenNI2Camera::FrameView& frame, int timeoutMS = 0 );
 
-    bool pollDepth( OpenNI2Camera::Frame& frame, int timeoutMS = 0 );
+    bool pollDepth( OpenNI2Camera::FrameView& frame, int timeoutMS = 0 );
 
-    bool pollInfrared( OpenNI2Camera::Frame& frame, int timeoutMS = 0 );
+    bool pollInfrared( OpenNI2Camera::FrameView& frame, int timeoutMS = 0 );
 
-    bool pollOne( OpenNI2Camera::Frame& frame, int timeoutMS = 0 );
+    bool pollOne( OpenNI2Camera::FrameView& frame, int timeoutMS = 0 );
 
-    bool pollAll( OpenNI2Camera::Frame& frame, int timeoutMS = 0 );
+    bool pollAll( OpenNI2Camera::FrameView& frame, int timeoutMS = 0 );
 
 private:
 
     bool initializeStreams();
 
-    bool copyColor( OpenNI2Camera::Frame& frame );
-    bool copyDepth( OpenNI2Camera::Frame& frame );
-    bool copyInfrared( OpenNI2Camera::Frame& frame );
+    bool copyColor( OpenNI2Camera::FrameView& frame );
+    bool copyDepth( OpenNI2Camera::FrameView& frame );
+    bool copyInfrared( OpenNI2Camera::FrameView& frame );
 
     openni::Device m_device;
 
@@ -67,6 +67,12 @@ private:
     openni::VideoStream m_colorStream;
     openni::VideoStream m_depthStream;
     openni::VideoStream m_infraredStream;
+
+    // Pointers to the video stream objects, stuff into a vector.
+    std::vector<openni::VideoStream*> m_streams;
+    int m_colorStreamIndex = -1;
+    int m_depthStreamIndex = -1;
+    int m_infraredStreamIndex = -1;
 
     bool m_isValid = false;
     static bool s_isOpenNIInitialized;

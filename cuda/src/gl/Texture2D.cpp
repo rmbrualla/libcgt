@@ -61,7 +61,7 @@ Texture2D::MappedResource::~MappedResource()
     cudaGraphicsUnmapResources( 1, &m_resource );
 }
 
-cudaArray* Texture2D::MappedResource::array() const
+cudaArray_t Texture2D::MappedResource::array() const
 {
     return m_array;
 }

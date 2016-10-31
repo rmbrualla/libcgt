@@ -34,3 +34,6 @@
     }
 #endif
 
+#ifndef CUDA_SUCCEEDED
+#define CUDA_SUCCEEDED(err) ( ( err == cudaSuccess ) )
+#endif

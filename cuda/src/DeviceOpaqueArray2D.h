@@ -22,6 +22,11 @@ public:
 
     DeviceOpaqueArray2D() = default;
     DeviceOpaqueArray2D( const Vector2i& size );
+
+    // Wrap an existing cuArray in a DeviceOpaqueArray2D object *without*
+    // taking ownership.
+    DeviceOpaqueArray2D( cudaArray_t array );
+
     ~DeviceOpaqueArray2D();
     // TODO: move constructors and assignment operator.
 
@@ -36,9 +41,6 @@ public:
     Vector2i size() const;
     int numElements() const;
 
-    // TODO: resize()?
-    // TODO: bindTexture()
-
     // For the copy to succeed, sizes must be exact:
     //   src.size() == size() - dstOffset
     // In addition, src.elementsArePacked() or src.packed() must be true.
@@ -51,16 +53,17 @@ public:
     bool copyToHost( Array2DView< T > dst,
         const Vector2i& srcOffset = Vector2i{ 0 } ) const;
 
-    const cudaArray* deviceArray() const;
-    cudaArray* deviceArray();
+    const cudaArray_t deviceArray() const;
+    cudaArray_t deviceArray();
 
 private:
 
+    // TODO: Vector2< size_t >.
     Vector2i m_size = Vector2i{ 0 };
     cudaChannelFormatDesc m_cfd = {};
     cudaResourceDesc m_resourceDesc = {};
-    size_t m_sizeInBytes = 0;
-    cudaArray* m_deviceArray = nullptr;
+    cudaArray_t m_deviceArray = nullptr;
+    bool m_ownsArray = true;
 
 };
 

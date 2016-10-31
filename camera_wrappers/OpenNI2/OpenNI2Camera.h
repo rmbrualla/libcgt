@@ -22,38 +22,35 @@ public:
     using Intrinsics = libcgt::core::cameras::Intrinsics;
     using EuclideanTransform = libcgt::core::vecmath::EuclideanTransform;
 
-    // TODO(jiawen):
-    // Consider changing things so that when polling, you should pass in owning
-    // frames.
-
-    // A simple (non-owning) container for a frame of data and its metadata
-    // returned by the camera. When polling from the camera, "colorUpdated" or
-    // "depthUpdated" will be set to true indicating which was updated.
+    // A simple, non-owning container for a frame of data and its metadata
+    // returned by the camera. When polling the camera, all of the "updated"
+    // boolean fields will be written to. Those set to true will have their
+    // corresponding data buffers written to.
     //
+    // All images have y pointing down.
+    //
+    // TODO: use std::time_point<micros>.
     // Timestamps are in microseconds from an arbitrary zero.
-    struct Frame
+    struct FrameView
     {
-        // ----- Color stream -----
         // Only one of rgb or infrared will be populated, depending on which
         // color format was configured.
         bool colorUpdated;
+        bool infraredUpdated;
+        bool depthUpdated;
 
+        // ----- Color stream -----
         int64_t colorTimestamp;
         int colorFrameNumber;
         Array2DView< uint8x3 > rgb;
-        // TODO(jiawen): YUV formats.
+        // TODO: YUV formats.
 
-        bool infraredUpdated;
+        // ----- Infrared stream -----
         int64_t infraredTimestamp;
         int infraredFrameNumber;
         Array2DView< uint16_t > infrared;
 
         // ----- Depth stream -----
-        // Only one of packedDepth or (extendedDepth and playerIndex) will be
-        // populated, depending on whether player tracking is enabled, and
-        // whether the client requested packed or extended depth.
-        bool depthUpdated;
-
         int64_t depthTimestamp;
         int depthFrameNumber;
         Array2DView< uint16_t > depth;
@@ -68,12 +65,12 @@ public:
     // 0.8m - 4m.
     static Range1f depthRangeMeters();
 
-    // TODO(jiawen): pass in resolution and scale.
+    // TODO: pass in resolution and scale.
     // Retrieve the "default" intrinsics that is approximately correct for all
     // models at 640x480.
     static Intrinsics defaultColorIntrinsics();
 
-    // TODO(jiawen): pass in resolution and scale.
+    // TODO: pass in resolution and scale.
     // Retrieve the "default" intrinsics that is approximately correct for all
     // models at 640x480.
     static Intrinsics defaultDepthIntrinsics();
@@ -88,7 +85,7 @@ public:
     // Translation has units of millimeters.
     static EuclideanTransform colorFromDepthExtrinsicsMeters();
 
-    // TODO(jiawen): Useful configurations:
+    // TODO: Useful configurations:
     // StreamConfig infrared{ StreamType::INFRARED, Vector2i{ 640, 480 }, 30, ::PixelFormat::GRAY_U16 }
     // Range is [0, 1023].
 
@@ -140,17 +137,17 @@ public:
     bool getAutoWhiteBalanceEnabled();
     bool setAutoWhiteBalanceEnabled( bool enabled );
 
-    bool pollColor( OpenNI2Camera::Frame& frame, int timeoutMS = 0 );
+    bool pollColor( FrameView& frame, int timeoutMS = 0 );
 
-    bool pollDepth( OpenNI2Camera::Frame& frame, int timeoutMS = 0 );
+    bool pollDepth( FrameView& frame, int timeoutMS = 0 );
 
-    bool pollInfrared( OpenNI2Camera::Frame& frame, int timeoutMS = 0 );
+    bool pollInfrared( FrameView& frame, int timeoutMS = 0 );
 
-    bool pollOne( Frame& frame, int timeoutMS = 0 );
+    bool pollOne( FrameView& frame, int timeoutMS = 0 );
 
     // Poll all registered streams.
     // Returns true if all succeeded.
-    bool pollAll( Frame& frame, int timeoutMS = 0 );
+    bool pollAll( FrameView& frame, int timeoutMS = 0 );
 
 private:
 

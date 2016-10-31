@@ -2,6 +2,8 @@
 
 #include <cassert>
 
+#include <common/ArrayUtils.h>
+
 #include "DeviceVariable.h"
 #include "DeviceArray1D.h"
 

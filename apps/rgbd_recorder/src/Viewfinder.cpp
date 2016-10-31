@@ -211,12 +211,12 @@ void Viewfinder::onViewfinderTimeout()
 {
     if( m_oniCamera != nullptr )
     {
-        OpenNI2Camera::Frame frame;
+        OpenNI2Camera::FrameView frame;
         frame.rgb = m_rgb.writeView();
         frame.depth = m_depth.writeView();
         frame.infrared = m_infrared.writeView();
 
-        bool pollResult = m_oniCamera->pollAll( frame, 33 );
+        bool pollResult = m_oniCamera->pollOne( frame, 0 );
         {
             if( frame.colorUpdated )
             {
@@ -240,7 +240,7 @@ void Viewfinder::onViewfinderTimeout()
     }
 }
 
-void Viewfinder::writeFrame( OpenNI2Camera::Frame frame )
+void Viewfinder::writeFrame( OpenNI2Camera::FrameView frame )
 {
     QString status = QString( "Writing to: " ) +
         QString::fromStdString( m_filename );

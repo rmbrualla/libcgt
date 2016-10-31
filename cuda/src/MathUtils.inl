@@ -63,9 +63,9 @@ int3 sign( const float3& v )
 
 int3 isPositive( const int3& v )
 {
-    const uint* px = reinterpret_cast< const uint* >( &( v.x ) );
-    const uint* py = reinterpret_cast< const uint* >( &( v.y ) );
-    const uint* pz = reinterpret_cast< const uint* >( &( v.z ) );
+    const uint32_t* px = reinterpret_cast< const uint32_t* >( &( v.x ) );
+    const uint32_t* py = reinterpret_cast< const uint32_t* >( &( v.y ) );
+    const uint32_t* pz = reinterpret_cast< const uint32_t* >( &( v.z ) );
 
     return make_int3
     (
@@ -77,9 +77,9 @@ int3 isPositive( const int3& v )
 
 int3 isPositive( const float3& v )
 {
-    const uint* px = reinterpret_cast< const uint* >( &( v.x ) );
-    const uint* py = reinterpret_cast< const uint* >( &( v.y ) );
-    const uint* pz = reinterpret_cast< const uint* >( &( v.z ) );
+    const uint32_t* px = reinterpret_cast< const uint32_t* >( &( v.x ) );
+    const uint32_t* py = reinterpret_cast< const uint32_t* >( &( v.y ) );
+    const uint32_t* pz = reinterpret_cast< const uint32_t* >( &( v.z ) );
 
     return make_int3
     (
